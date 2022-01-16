@@ -1,9 +1,11 @@
 import React from 'react';
-import {Link} from 'react-router-dom';
 import '../assets/styles.css';
 import {apiURL} from '../data/API';
 import Axios from 'axios';
 import { Accordion, AccordionSummary, AccordionDetails } from '@material-ui/core';
+import { connect } from 'react-redux';
+import Cookies from 'universal-cookie';
+const cookies = new Cookies();
 
 class Tokens extends React.Component {
   state={
@@ -24,15 +26,7 @@ class Tokens extends React.Component {
   }
 
   getTokens(){
-    var rpc;
-    if(localStorage.getItem("node")){
-      rpc = JSON.parse(localStorage.getItem("node")).end;
-    }else{
-      localStorage.setItem("node", JSON.stringify({end: "localhost:1315", dec: 6}))
-      localStorage.setItem("nodes", JSON.stringify([{node: "localhost:1316", dec: 6, name: "Persistence"},{node: "localhost:1311", dec: 6, name: "Comdex"}, {node: "localhost:1315", dec: 6, name: "Ki Chain"}]))
-      rpc = JSON.parse(localStorage.getItem("node")).end;
-    }
-    Axios.get(`${apiURL}/ibc/tokens/list?rpc=${rpc}`)
+    Axios.get(`${apiURL}/ibc/tokens/list?rpc=${cookies.get("node").end}`)
     .then(res => {
       this.setState({
         assets: res.data.data,
@@ -44,7 +38,7 @@ class Tokens extends React.Component {
       this.setState({loopTokens: true})
       console.error(err)
     })
-    Axios.get(`${apiURL}/ibc/channels?rpc=${rpc}`)
+    Axios.get(`${apiURL}/ibc/channels?rpc=${cookies.get("node").end}`)
     .then(res => {
       this.setState({
         channels: res.data.data,
@@ -82,7 +76,7 @@ class Tokens extends React.Component {
                   color = "grey"
                 }
                 channelList.push(
-                  <Link to={`/channel/${(channel.from).split("-")[1]}/${(channel.to).split("-")[1]}`}>
+                  <a href={`/channel/${(channel.from).split("-")[1]}/${(channel.to).split("-")[1]}`} className="d-block">
                     <div className="connected-div">
                       <div className="connected-text bg-success text-white">
                         <p>Channel {(channel.from).split("-")[1]}</p>
@@ -92,7 +86,7 @@ class Tokens extends React.Component {
                         <p>Channel {(channel.to).split("-")[1]}</p>
                       </div>
                     </div>
-                  </Link>
+                  </a>
                 )
               }
             })
@@ -101,15 +95,16 @@ class Tokens extends React.Component {
         assetsList.push(
           <Accordion>
             <AccordionSummary
-              expandIcon={<i className="bi bi-chevron-down"></i>}
+              expandIcon={<i className="bi bi-chevron-down text-muted"></i>}
               aria-controls="panel1bh-content"
               id="panel1bh-header"
-              className="text-hash"
+              className="text-hash coloring"
+              data-theme={this.props.fullData.theme}
               style={{textTransform: "uppercase", fontWeight: "bold"}}
             >
               {denom} <b style={{"opacity": "0.75", "fontWeight": "normal", "fontSize": "13px","marginTop":"3px","marginLeft":"5px"}}>{((channelList).length)}</b>
             </AccordionSummary>
-            <AccordionDetails style={{display: "block", background:"#f7f7f7"}}>
+            <AccordionDetails className="my-container rounded-0" data-theme={this.props.fullData.theme} style={{display: "block"}}>
               {channelList}
             </AccordionDetails>
           </Accordion>
@@ -126,7 +121,7 @@ class Tokens extends React.Component {
           this.loopTokens()
         : 
         <>
-        <div className="my-container blank-my-container"></div>
+        <div className="my-container blank-my-container" data-theme={this.props.fullData.theme}></div>
         </>
       }
       </>
@@ -134,4 +129,10 @@ class Tokens extends React.Component {
   }
 }
 
-export default Tokens;
+const mapStateToProps = (state) => {
+  return {
+    fullData: state.user
+  }
+};
+
+export default connect(mapStateToProps)(Tokens);

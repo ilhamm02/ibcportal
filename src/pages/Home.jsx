@@ -3,19 +3,20 @@ import '../assets/styles.css';
 import Summary from '../components/Summary';
 import Transactions from '../components/Transactions';
 import Tokens from '../components/Tokens';
+import { connect } from 'react-redux';
 
 class Home extends React.Component {
   componentDidMount() {
-    document.title = `IBC Gang | Decentralized Cosmos-SDK IBC Protocol Data Display`;
+    document.title = `IBC Scan | Decentralized Cosmos-SDK IBC Protocol Data Display`;
   }
 
   render(){
     return (
       <>
-      <Summary />
-      <div className="init-container no-margin">
+      <div className="thecontainer" data-theme={this.props.fullData.theme}>
+        <Summary />
         <div className="row">
-          <div className="col-md-6">
+          <div className="col-md-6 mb-3">
             <h5>Channels</h5>
             <Tokens />
           </div>
@@ -30,4 +31,10 @@ class Home extends React.Component {
   }
 }
 
-export default Home;
+const mapStateToProps = (state) => {
+  return {
+    fullData: state.user
+  }
+};
+
+export default connect(mapStateToProps)(Home);

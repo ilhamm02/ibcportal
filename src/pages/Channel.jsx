@@ -1,9 +1,11 @@
 import React from 'react';
-import {Link} from 'react-router-dom';
 import '../assets/styles.css';
 import Summary from "../components/Summary";
 import Axios from 'axios';
-import {apiURL, projectName} from '../data/API'
+import {apiURL, projectName} from '../data/API';
+import { connect } from 'react-redux';
+import Cookies from 'universal-cookie';
+const cookies = new Cookies();
 
 class Channel extends React.Component {
   constructor(props) {
@@ -12,7 +14,7 @@ class Channel extends React.Component {
     this.state = {
       checkTxIn: false,
       checkTxOut: false,
-      dec: localStorage.getItem("node") ? JSON.parse(localStorage.getItem("node")).dec : 6,
+      dec: cookies.get("node") ? cookies.get("node").dec : 6,
       pageIn: 1,
       pageOut: 1,
       totalIn: 0,
@@ -33,20 +35,12 @@ class Channel extends React.Component {
   }
 
   getStatus(){
-    var rpc;
-    if(localStorage.getItem("node")){
-      rpc = JSON.parse(localStorage.getItem("node")).end;
-    }else{
-      localStorage.setItem("node", {"end": "localhost:1315", "dec": 6})
-      localStorage.setItem("nodes", JSON.stringify([{node: "localhost:1316", dec: 6, name: "Persistence"},{node: "localhost:1311", dec: 6, name: "Comdex"}, {node: "localhost:1315", dec: 6, name: "Ki Chain"}]))
-      rpc = JSON.parse(localStorage.getItem("node")).end;
-    }
-    Axios.get(`${apiURL}/ibc/channels?rpc=${rpc}`)
+    Axios.get(`${apiURL}/ibc/channels?rpc=${cookies.get("node").end}`)
     .then(res => {
       var status = "NOT_FOUND"; 
-      status = res.data.data.map(ch => {
+      res.data.data.forEach(ch => {
         if(ch.from === `channel-${this.props.match.params.from}` && ch.to === `channel-${this.props.match.params.to}`){
-          return ch.status
+          status = ch.status
         }
       })
       this.setState({
@@ -55,15 +49,7 @@ class Channel extends React.Component {
     })
   }
   getTokens(){
-    var rpc;
-    if(localStorage.getItem("node")){
-      rpc = JSON.parse(localStorage.getItem("node")).end;
-    }else{
-      localStorage.setItem("node", {"end": "localhost:1315", "dec": 6})
-      localStorage.setItem("nodes", JSON.stringify([{node: "localhost:1316", dec: 6, name: "Persistence"},{node: "localhost:1311", dec: 6, name: "Comdex"}, {node: "localhost:1315", dec: 6, name: "Ki Chain"}]))
-      rpc = JSON.parse(localStorage.getItem("node")).end;
-    }
-    Axios.get(`${apiURL}/ibc/tokens/list?rpc=${rpc}`)
+    Axios.get(`${apiURL}/ibc/tokens/list?rpc=${cookies.get("node").end}`)
     .then(res => {
       const denom = res.data.data.filter(tk => {
         return tk.channel === `channel-${this.props.match.params.from}`
@@ -77,15 +63,7 @@ class Channel extends React.Component {
     if(!page){
       page = this.state.pageOut
     }
-    var rpc;
-    if(localStorage.getItem("node")){
-      rpc = JSON.parse(localStorage.getItem("node")).end;
-    }else{
-      localStorage.setItem("node", {"end": "localhost:1315", "dec": 6})
-      localStorage.setItem("nodes", JSON.stringify([{node: "localhost:1316", dec: 6, name: "Persistence"},{node: "localhost:1311", dec: 6, name: "Comdex"}, {node: "localhost:1315", dec: 6, name: "Ki Chain"}]))
-      rpc = JSON.parse(localStorage.getItem("node")).end;
-    }
-    Axios.get(`${apiURL}/txs/list?fromChannel=channel-${this.props.match.params.from}&toChannel=channel-${this.props.match.params.to}&type=out&rpc=${rpc}&page=${page}`)
+    Axios.get(`${apiURL}/txs/list?fromChannel=channel-${this.props.match.params.from}&toChannel=channel-${this.props.match.params.to}&type=out&rpc=${cookies.get("node").end}&page=${page}`)
     .then(res => {
       this.setState({
         txsOut: res.data.data,
@@ -101,15 +79,7 @@ class Channel extends React.Component {
     if(!page){
       page = this.state.pageIn
     }
-    var rpc;
-    if(localStorage.getItem("node")){
-      rpc = JSON.parse(localStorage.getItem("node")).end;
-    }else{
-      localStorage.setItem("node", {"end": "localhost:1315", "dec": 6})
-      localStorage.setItem("nodes", JSON.stringify([{node: "localhost:1316", dec: 6, name: "Persistence"},{node: "localhost:1311", dec: 6, name: "Comdex"}, {node: "localhost:1315", dec: 6, name: "Ki Chain"}]))
-      rpc = JSON.parse(localStorage.getItem("node")).end;
-    }
-    Axios.get(`${apiURL}/txs/list?fromChannel=channel-${this.props.match.params.from}&toChannel=channel-${this.props.match.params.to}&type=in&rpc=${rpc}&page=${page}`)
+    Axios.get(`${apiURL}/txs/list?fromChannel=channel-${this.props.match.params.from}&toChannel=channel-${this.props.match.params.to}&type=in&rpc=${cookies.get("node").end}&page=${page}`)
     .then(res => {
       this.setState({
         txsIn: res.data.data,
@@ -151,23 +121,23 @@ class Channel extends React.Component {
     const dateNow = new Date();
     return this.state.txsIn.map(tx => {
       var txDate = parseInt((dateNow-tx.txTime)/1000);
-      if (txDate > 86400){
-        txDate = parseInt(txDate/86400)+"d";
+      if (parseInt(txDate) > 86400){
+        txDate = parseInt(parseInt(txDate)/86400)+"d";
         if(parseInt(txDate) > 30){
-          txDate = parseInt(txDate/30)+"m"
+          txDate = parseInt(parseInt(txDate)/30)+"mo"
         }else if(parseInt(txDate) > 7){
-          txDate = parseInt(txDate/7)+"w"
+          txDate = parseInt(parseInt(txDate)/7)+"w"
         }
-      }else if(txDate > 3600){
-        txDate = parseInt(txDate/3600)+"h";
-      }else if(txDate > 60){
-        txDate = parseInt(txDate/60)+"m";
+      }else if(parseInt(txDate) > 3600){
+        txDate = parseInt(parseInt(txDate)/3600)+"h";
+      }else if(parseInt(txDate) > 60){
+        txDate = parseInt(parseInt(txDate)/60)+"m";
       }else{
-        txDate = txDate+"s"
+        txDate = txDate+"s";
       }
       return(
-        <Link to={`/tx/${tx.txHash}`}>
-          <div className="my-container transaction-list">
+        <a href={`/tx/${tx.txHash}`}>
+          <div className="my-container transaction-list" data-theme={this.props.fullData.theme}>
             <div className="row">
               <div className="col-md-9 col-8">
                 <p className="text-hash"><i className="bi bi-check-all"></i> {tx.txHash}</p>
@@ -199,7 +169,7 @@ class Channel extends React.Component {
               </div>
             </div>
           </div>
-        </Link>
+        </a>
       )
     })
   }
@@ -207,18 +177,23 @@ class Channel extends React.Component {
     const dateNow = new Date();
     return this.state.txsOut.map(tx => {
       var txDate = parseInt((dateNow-tx.txTime)/1000);
-      if (txDate > 86400){
-        txDate = parseInt(txDate/86400)+"d";
-      }else if(txDate > 3600){
-        txDate = parseInt(txDate/3600)+"h";
-      }else if(txDate > 60){
-        txDate = parseInt(txDate/60)+"m";
+      if (parseInt(txDate) > 86400){
+        txDate = parseInt(parseInt(txDate)/86400)+"d";
+        if(parseInt(txDate) > 30){
+          txDate = parseInt(parseInt(txDate)/30)+"mo"
+        }else if(parseInt(txDate) > 7){
+          txDate = parseInt(parseInt(txDate)/7)+"w"
+        }
+      }else if(parseInt(txDate) > 3600){
+        txDate = parseInt(parseInt(txDate)/3600)+"h";
+      }else if(parseInt(txDate) > 60){
+        txDate = parseInt(parseInt(txDate)/60)+"m";
       }else{
-        txDate = txDate+"s"
+        txDate = txDate+"s";
       }
       return(
-        <Link to={`/tx/${tx.txHash}`}>
-          <div className="my-container transaction-list">
+        <a href={`/tx/${tx.txHash}`}>
+          <div className="my-container transaction-list" data-theme={this.props.fullData.theme}>
             <div className="row">
               <div className="col-md-9 col-8">
                 <p className="text-hash"><i className="bi bi-check-all"></i> {tx.txHash}</p>
@@ -250,7 +225,7 @@ class Channel extends React.Component {
               </div>
             </div>
           </div>
-        </Link>
+        </a>
       )
     })
   }
@@ -263,16 +238,16 @@ class Channel extends React.Component {
   render() {
     return (
       <>
-      <Summary />
-      <div className="init-container no-margin">
+      <div className="thecontainer" data-theme={this.props.fullData.theme}>
+        <Summary />
         <div className="row">
           <div className="col-md-3">
             <h5>Channel</h5>
-            <div className="my-container bg-dark account">
+            <div className="my-container bg-channel account">
               <p className="text-white mt-3 h6"><b>Channel</b></p>
               <p className="p-value p-address text-white">channel-{this.props.match.params.from} & channel-{this.props.match.params.to}</p>
               <p className="text-white mt-3 h6"><b>Status</b></p>
-              <p className="p-value p-address text-white closing-p mb-2"><span className="badge badge-pills bg-success">{this.state.status}</span>
+              <p className="p-value p-address text-white closing-p mb-2"><span className="badge badge-pills bg-primary">{this.state.status}</span>
               </p>
               <p className="text-white mt-3 h6"><b>Total Transaction</b></p>
               <p className="p-value p-address text-white">{(parseInt(this.state.totalIn) + parseInt(this.state.totalOut)).toLocaleString()}</p>
@@ -295,7 +270,7 @@ class Channel extends React.Component {
                   this.state.checkTxIn ?
                   <>
                     {this.loopTxsIn()}
-                    <div className="pagging">
+                    <div className="pagging" data-theme={this.props.fullData.theme}>
                       <div className="row">
                         <div className="col-5">
                           <button className="btn btn-left" onClick={this.decreasePageIn} disabled={this.state.pageIn === 1 ? true : false}><i className="bi bi-arrow-left"></i> Previous</button>
@@ -318,7 +293,7 @@ class Channel extends React.Component {
                   this.state.checkTxOut ?
                   <>
                     {this.loopTxsOut()}
-                    <div className="pagging">
+                    <div className="pagging" data-theme={this.props.fullData.theme}>
                       <div className="row">
                         <div className="col-5">
                           <button className="btn btn-left" onClick={this.decreasePageOut} disabled={this.state.pageOut === 1 ? true : false}><i className="bi bi-arrow-left"></i> Previous</button>
@@ -344,4 +319,10 @@ class Channel extends React.Component {
   }
 }
 
-export default Channel;
+const mapStateToProps = (state) => {
+  return {
+    fullData: state.user
+  }
+};
+
+export default connect(mapStateToProps)(Channel);

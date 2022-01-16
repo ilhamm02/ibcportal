@@ -8,6 +8,7 @@ import Home from "./pages/Home.jsx";
 import Transaction from "./pages/Transaction.jsx";
 import Account from "./pages/Account.jsx";
 import Channel from "./pages/Channel.jsx";
+import Footer from "./components/Footer.jsx";
 
 function App() {
   return (
@@ -20,6 +21,7 @@ function App() {
         <Route exact component={Account} path="/account/:address"/>
         <Route exact component={Channel} path="/channel/:from/:to"/>
       </Switch>
+      <Footer />
     </BrowserRouter>
   );
 }

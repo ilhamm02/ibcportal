@@ -1,10 +1,12 @@
 import React from 'react';
-import {Link} from 'react-router-dom';
 import '../assets/styles.css';
 import ReactTooltip from "react-tooltip";
 import QRCode from 'react-qr-code';
 import Axios from 'axios';
-import {apiURL, projectName} from '../data/API'
+import {apiURL, projectName} from '../data/API';
+import { connect } from 'react-redux';
+import Cookies from 'universal-cookie';
+const cookies = new Cookies();
 
 class Account extends React.Component {
   constructor(props) {
@@ -13,7 +15,7 @@ class Account extends React.Component {
     this.state = {
       checkTxIn: false,
       checkTxOut: false,
-      dec: localStorage.getItem("node") ? JSON.parse(localStorage.getItem("node")).dec : 6,
+      dec: cookies.get("node") ? cookies.get("node").dec : 6,
       pageIn: 1,
       pageOut: 1,
     }
@@ -31,15 +33,7 @@ class Account extends React.Component {
   }
 
   getBalance() {
-    var rpc;
-    if(localStorage.getItem("node")){
-      rpc = JSON.parse(localStorage.getItem("node")).end;
-    }else{
-      localStorage.setItem("node", JSON.stringify({end: "localhost:1315", dec: 6}))
-      localStorage.setItem("nodes", JSON.stringify([{node: "localhost:1316", dec: 6, name: "Persistence"},{node: "localhost:1311", dec: 6, name: "Comdex"}, {node: "localhost:1315", dec: 6, name: "Ki Chain"}]))
-      rpc = JSON.parse(localStorage.getItem("node")).end;
-    }
-    Axios.get(`${apiURL}/balance?address=${this.props.match.params.address}&rpc=${rpc}`)
+    Axios.get(`${apiURL}/balance?address=${this.props.match.params.address}&rpc=${cookies.get("node").end}`)
     .then(res => {
       this.setState({
         balance: res.data.data
@@ -56,15 +50,7 @@ class Account extends React.Component {
     if(!page){
       page = this.state.pageIn
     }
-    var rpc;
-    if(localStorage.getItem("node")){
-      rpc = JSON.parse(localStorage.getItem("node")).end;
-    }else{
-      localStorage.setItem("node", JSON.stringify({end: "localhost:1315", dec: 6}))
-      localStorage.setItem("nodes", JSON.stringify([{node: "localhost:1316", dec: 6, name: "Persistence"},{node: "localhost:1311", dec: 6, name: "Comdex"}, {node: "localhost:1315", dec: 6, name: "Ki Chain"}]))
-      rpc = JSON.parse(localStorage.getItem("node")).end;
-    }
-    Axios.get(`${apiURL}/txs/list?receiver=${this.props.match.params.address}&rpc=${rpc}&page=${page}`)
+    Axios.get(`${apiURL}/txs/list?receiver=${this.props.match.params.address}&rpc=${cookies.get("node").end}&page=${page}`)
     .then(res => {
       this.setState({
         txsIn: res.data.data,
@@ -79,15 +65,7 @@ class Account extends React.Component {
     if(!page){
       page = this.state.pageOut
     }
-    var rpc;
-    if(localStorage.getItem("node")){
-      rpc = JSON.parse(localStorage.getItem("node")).end;
-    }else{
-      localStorage.setItem("node", JSON.stringify({end: "localhost:1315", dec: 6}))
-      localStorage.setItem("nodes", JSON.stringify([{node: "localhost:1316", dec: 6, name: "Persistence"},{node: "localhost:1311", dec: 6, name: "Comdex"}, {node: "localhost:1315", dec: 6, name: "Ki Chain"}]))
-      rpc = JSON.parse(localStorage.getItem("node")).end;
-    }
-    Axios.get(`${apiURL}/txs/list?sender=${this.props.match.params.address}&rpc=${rpc}&page=${page}`)
+    Axios.get(`${apiURL}/txs/list?sender=${this.props.match.params.address}&rpc=${cookies.get("node").end}&page=${page}`)
     .then(res => {
       this.setState({
         txsOut: res.data.data,
@@ -154,23 +132,23 @@ class Account extends React.Component {
     const dateNow = new Date();
     return this.state.txsIn.map(tx => {
       var txDate = parseInt((dateNow-tx.txTime)/1000);
-      if (txDate > 86400){
-        txDate = parseInt(txDate/86400)+"d";
+      if (parseInt(txDate) > 86400){
+        txDate = parseInt(parseInt(txDate)/86400)+"d";
         if(parseInt(txDate) > 30){
-          txDate = parseInt(txDate/30)+"m"
+          txDate = parseInt(parseInt(txDate)/30)+"mo"
         }else if(parseInt(txDate) > 7){
-          txDate = parseInt(txDate/7)+"w"
+          txDate = parseInt(parseInt(txDate)/7)+"w"
         }
-      }else if(txDate > 3600){
-        txDate = parseInt(txDate/3600)+"h";
-      }else if(txDate > 60){
-        txDate = parseInt(txDate/60)+"m";
+      }else if(parseInt(txDate) > 3600){
+        txDate = parseInt(parseInt(txDate)/3600)+"h";
+      }else if(parseInt(txDate) > 60){
+        txDate = parseInt(parseInt(txDate)/60)+"m";
       }else{
-        txDate = txDate+"s"
+        txDate = txDate+"s";
       }
       return(
-        <Link to={`/tx/${tx.txHash}`}>
-          <div className="my-container transaction-list">
+        <a href={`/tx/${tx.txHash}`}>
+          <div className="my-container transaction-list" data-theme={this.props.fullData.theme}>
             <div className="row">
               <div className="col-md-9 col-8">
                 <p className="text-hash"><i className="bi bi-check-all"></i> {tx.txHash}</p>
@@ -202,7 +180,7 @@ class Account extends React.Component {
               </div>
             </div>
           </div>
-        </Link>
+        </a>
       )
     })
   }
@@ -220,8 +198,8 @@ class Account extends React.Component {
         txDate = txDate+"s"
       }
       return(
-        <Link to={`/tx/${tx.txHash}`}>
-          <div className="my-container transaction-list">
+        <a href={`/tx/${tx.txHash}`}>
+          <div className="my-container transaction-list" data-theme={this.props.fullData.theme}>
             <div className="row">
               <div className="col-md-9 col-8">
                 <p className="text-hash"><i className="bi bi-check-all"></i> {tx.txHash}</p>
@@ -243,7 +221,7 @@ class Account extends React.Component {
               </div>
             </div>
           </div>
-        </Link>
+        </a>
       )
     })
   }
@@ -251,14 +229,14 @@ class Account extends React.Component {
   render(){
     return (
       <>
-      <ReactTooltip id="info-tip" type="light">
-        <span>Amount displayed in decimal {this.state.dec}</span>
-      </ReactTooltip>
-      <div className="init-container">
+      <div className="thecontainer" data-theme={this.props.fullData.theme}>
+        <ReactTooltip id="info-tip" type="light">
+          <span>Amount displayed in decimal {this.state.dec}</span>
+        </ReactTooltip>
         <div className="row">
           <div className="col-md-3">
             <h5>Account</h5>
-            <div className="my-container bg-dark account">
+            <div className="my-container bg-account account">
               <div className="p-2 bg-white qr rounded text-center">
                 <QRCode value={this.props.match.params.address} bgColor="#ffff" size="80" />
               </div>
@@ -285,7 +263,7 @@ class Account extends React.Component {
                   this.state.checkTxIn ?
                   <>
                     {this.loopTxsIn()}
-                    <div className="pagging">
+                    <div className="pagging" data-theme={this.props.fullData.theme}>
                       <div className="row">
                         <div className="col-5">
                           <button className="btn btn-left" onClick={this.decreasePageIn} disabled={this.state.pageIn === 1 ? true : false}><i className="bi bi-arrow-left"></i> Previous</button>
@@ -299,16 +277,16 @@ class Account extends React.Component {
                       </div>
                     </div>
                   </>
-                  : null
+                    : null
                 }
-              </div>
+                </div>
               <div className="col-md-6">
                 <h5>Transaction Out</h5>
                 {
-                  this.state.checkTxOut ?
+                this.state.checkTxOut ?
                   <>
-                    {this.loopTxsOut()}
-                    <div className="pagging">
+                  {this.loopTxsOut()}
+                    <div className="pagging" data-theme={this.props.fullData.theme}>
                       <div className="row">
                         <div className="col-5">
                           <button className="btn btn-left" onClick={this.decreasePageOut} disabled={this.state.pageOut === 1 ? true : false}><i className="bi bi-arrow-left"></i> Previous</button>
@@ -334,4 +312,10 @@ class Account extends React.Component {
   }
 }
 
-export default Account;
+const mapStateToProps = (state) => {
+  return {
+    fullData: state.user
+  }
+};
+
+export default connect(mapStateToProps)(Account);

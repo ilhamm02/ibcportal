@@ -1,8 +1,10 @@
 import React from 'react';
-import {Link} from 'react-router-dom';
 import '../assets/styles.css';
 import {apiURL} from '../data/API';
 import Axios from 'axios';
+import { connect } from 'react-redux';
+import Cookies from 'universal-cookie';
+const cookies = new Cookies();
 
 class Transactions extends React.Component {
   constructor(props) {
@@ -11,7 +13,7 @@ class Transactions extends React.Component {
     this.state={
       checkTx: false,
       loopTx: false,
-      dec: localStorage.getItem("node") ? JSON.parse(localStorage.getItem("node")).dec : 6,
+      dec: cookies.get("node") ? cookies.get("node").dec : 6,
       page: 1
     }
 
@@ -57,15 +59,7 @@ class Transactions extends React.Component {
     if(!page){
       page = this.state.page
     }
-    var rpc;
-    if(localStorage.getItem("node")){
-      rpc = JSON.parse(localStorage.getItem("node")).end;
-    }else{
-      localStorage.setItem("node", JSON.stringify({end: "localhost:1315", dec: 6}))
-      localStorage.setItem("nodes", JSON.stringify([{node: "localhost:1316", dec: 6, name: "Persistence"},{node: "localhost:1311", dec: 6, name: "Comdex"}, {node: "localhost:1315", dec: 6, name: "Ki Chain"}]))
-      rpc = JSON.parse(localStorage.getItem("node")).end;
-    }
-    Axios.get(`${apiURL}/txs/list?rpc=${rpc}&page=${page}`)
+    Axios.get(`${apiURL}/txs/list?rpc=${cookies.get("node").end}&page=${page}`)
     .then(res => {
       this.setState({
         txs: res.data.data,
@@ -101,22 +95,22 @@ class Transactions extends React.Component {
     return this.state.txs.map(tx => {
       var txDate = parseInt((dateNow-tx.txTime)/1000);
       if (txDate > 86400){
-        txDate = parseInt(txDate/86400)+"d";
-        if(txDate > 30){
-          txDate = parseInt(txDate/30)+"m"
-        }else if(txDate > 7){
-          txDate = parseInt(txDate/7)+"w"
+        txDate = parseInt(parseInt(txDate)/86400)+"d";
+        if(parseInt(txDate) > 30){
+          txDate = parseInt(parseInt(txDate)/30)+"mo"
+        }else if(parseInt(txDate) > 7){
+          txDate = parseInt(parseInt(txDate)/7)+"w"
         }
-      }else if(txDate > 3600){
-        txDate = parseInt(txDate/3600)+"h";
-      }else if(txDate > 60){
-        txDate = parseInt(txDate/60)+"m";
+      }else if(parseInt(txDate) > 3600){
+        txDate = parseInt(parseInt(txDate)/7)+"h";
+      }else if(parseInt(txDate) > 60){
+        txDate = parseInt(parseInt(txDate)/7)+"m";
       }else{
         txDate = txDate+"s"
       }
       return(
-        <Link to={`/tx/${tx.txHash}`}>
-          <div className="my-container transaction-list">
+        <a href={`/tx/${tx.txHash}`}>
+          <div className="my-container transaction-list" data-theme={this.props.fullData.theme}>
             <div className="row">
               <div className="col-md-9 col-8">
                 <p className="text-hash"><i className="bi bi-check-all"></i> {tx.txHash}</p>
@@ -148,7 +142,7 @@ class Transactions extends React.Component {
               </div>
             </div>
           </div>
-        </Link>
+        </a>
       )
     })
   }
@@ -160,7 +154,7 @@ class Transactions extends React.Component {
         this.state.checkTx ?
         <>
           {this.loopTxs()}
-          <div className="pagging">
+          <div className="pagging" data-theme={this.props.fullData.theme}>
             <div className="row">
               <div className="col-5">
                 <button className="btn btn-left" onClick={this.decreasePage} disabled={this.state.page === 1 ? true : false}><i className="bi bi-arrow-left"></i> Previous</button>
@@ -176,7 +170,7 @@ class Transactions extends React.Component {
         </>
         :
         <>
-        <div className="my-container blank-my-container">
+        <div className="my-container blank-my-container" data-theme={this.props.fullData.theme}>
         </div>
         </>
       }
@@ -185,4 +179,10 @@ class Transactions extends React.Component {
   }
 }
 
-export default Transactions;
+const mapStateToProps = (state) => {
+  return {
+    fullData: state.user
+  }
+};
+
+export default connect(mapStateToProps)(Transactions);

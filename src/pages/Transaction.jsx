@@ -1,29 +1,23 @@
 import React from 'react';
-import {Link} from 'react-router-dom';
 import '../assets/styles.css';
 import Summary from '../components/Summary';
 import ReactTooltip from "react-tooltip";
 import {apiURL, projectName} from "../data/API";
 import Axios from 'axios';
 import moment from 'moment';
+import { connect } from 'react-redux';
+import Cookies from 'universal-cookie';
+const cookies = new Cookies();
 
 class Transaction extends React.Component {
   state={
     checkTx: false,
     loopTx: false,
-    dec: localStorage.getItem("node") ? JSON.parse(localStorage.getItem("node")).dec : 6
+    dec: cookies.get("node") ? cookies.get("node").dec : 6
   }
   componentDidMount() {
     document.title = `Transaction ${this.props.match.params.hash} | ${projectName}`;
-    var rpc;
-    if(localStorage.getItem("node")){
-      rpc = JSON.parse(localStorage.getItem("node")).end;
-    }else{
-      localStorage.setItem("node", JSON.stringify({end: "localhost:1315", dec: 6}))
-      localStorage.setItem("nodes", JSON.stringify([{node: "localhost:1316", dec: 6, name: "Persistence"},{node: "localhost:1311", dec: 6, name: "Comdex"}, {node: "localhost:1315", dec: 6, name: "Ki Chain"}]))
-      rpc = JSON.parse(localStorage.getItem("node")).end;
-    }
-    Axios.get(`${apiURL}/txs/detail?hash=${this.props.match.params.hash}&rpc=${rpc}`)
+    Axios.get(`${apiURL}/txs/detail?hash=${this.props.match.params.hash}&rpc=${cookies.get("node").end}`)
     .then(res => {
       if(res.data.data){
         this.setState({
@@ -100,8 +94,8 @@ class Transaction extends React.Component {
   render(){
     return (
       <>
-      <Summary />
-      <div className="init-container no-margin">
+      <div className="thecontainer" data-theme={this.props.fullData.theme}>
+        <Summary />
         <h5>Transaction</h5>
         {
           this.state.checkTx ?
@@ -131,7 +125,7 @@ class Transaction extends React.Component {
               : <span class="text-inline no-margin-text badge rounded-pill bg-danger mb-2" data-tip data-for="status-text"><i class="bi bi-check-all"></i> Failed</span>
             }
             <div class="text-inline vr"></div>
-            <span class="text-inline no-margin-text text-muted mb-2 small-text" data-tip data-for="date-text"><i class="bi bi-clock-history"></i> {moment(this.state.tx.txTime).fromNow()}</span>
+            <span class="text-inline no-margin-text mb-2 small-text" data-tip data-for="date-text"><i class="bi bi-clock-history"></i> {moment(this.state.tx.txTime).fromNow()}</span>
             <div class="row">
               <div class="col-xl-6">
                 <div className="my-container">
@@ -161,8 +155,8 @@ class Transaction extends React.Component {
                       <p className="p-value">
                         {
                           this.state.tx.txAdditional.from ?
-                          <> <Link to={`/account/${this.state.tx.txAdditional.from}`}>{this.state.tx.txAdditional.from}</Link> {this.copy(this.state.tx.txAdditional.from)}</>
-                          : <> <Link to={`/account/${this.state.tx.txSender}`}>{this.state.tx.txSender}</Link> {this.copy(this.state.tx.txSender)}</>
+                          <> <a href={`/account/${this.state.tx.txAdditional.from}`}>{this.state.tx.txAdditional.from}</a> {this.copy(this.state.tx.txAdditional.from)}</>
+                          : <> <a href={`/account/${this.state.tx.txSender}`}>{this.state.tx.txSender}</a> {this.copy(this.state.tx.txSender)}</>
                         }
                       </p>
                     </div>
@@ -190,11 +184,11 @@ class Transaction extends React.Component {
               <div class="col-xl-6">
                 <div className="my-container">
                   <div className="connected-div">
-                    <div className="connected-text bg-warning">
+                    <div className="connected-text bg-warning text-dark">
                       <p>{this.state.tx.txAdditional.fromChannel}</p>
                     </div>
                     <div class="connected-line bg-success"></div>
-                    <div className="connected-text bg-warning">
+                    <div className="connected-text bg-warning text-dark">
                       <p>{this.state.tx.txAdditional.toChannel}</p>
                     </div>
                   </div>
@@ -215,7 +209,7 @@ class Transaction extends React.Component {
                           <p className="p-title closing-p mt-3">Receiver</p>
                         </div>
                         <div className="col-md-10">
-                          <p className="p-value mt-3"><Link to={`/account/${this.state.tx.txAdditional.to}`}>{this.state.tx.txAdditional.to}</Link> {this.copy(this.state.tx.txAdditional.to)}</p>
+                          <p className="p-value mt-3"><a href={`/account/${this.state.tx.txAdditional.to}`}>{this.state.tx.txAdditional.to}</a> {this.copy(this.state.tx.txAdditional.to)}</p>
                         </div>
                       </>
                       : null
@@ -236,7 +230,7 @@ class Transaction extends React.Component {
                       <p className="p-title closing-p">Amount</p>
                     </div>
                     <div className="col-md-10">
-                      <p className="p-value" data-tip data-for="amount">{(parseInt(this.state.tx.txAdditional.amount)/10**this.state.dec).toLocaleString(undefined, {maximumFractionDigits: 6})} <span className="badge bg-primary text-denom">{this.state.tx.txAdditional.denom}</span></p>
+                      <p className="p-value" data-tip data-for="amount">{(parseInt(this.state.tx.txAdditional.amount)/10**parseInt(this.state.dec)).toLocaleString(undefined, {maximumFractionDigits: 6})} <span className="badge bg-primary text-denom">{this.state.tx.txAdditional.denom}</span></p>
                     </div>
                     <div className="col-md-2">
                       <p className="p-title closing-p">Connection</p>
@@ -267,4 +261,10 @@ class Transaction extends React.Component {
   }
 }
 
-export default Transaction;
+const mapStateToProps = (state) => {
+  return {
+    fullData: state.user
+  }
+};
+
+export default connect(mapStateToProps)(Transaction);
